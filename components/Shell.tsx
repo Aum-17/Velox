@@ -14,6 +14,7 @@ import { LiveRun } from "./LiveRun";
 import { RunForm } from "./RunForm";
 import { Celebration } from "./Celebration";
 import { SettingsSheet } from "./SettingsSheet";
+import { Intro } from "./Intro";
 import { deviceName } from "./Profile";
 import { authClient } from "@/lib/auth-client";
 import { Fingerprint, X } from "lucide-react";
@@ -39,7 +40,7 @@ function Clock() {
 }
 
 function Inner() {
-  const { ready, openRunForm, syncState } = useStore();
+  const { ready, openRunForm, syncState, data } = useStore();
   const [tab, setTab] = useState<TabId>("home");
   const [settings, setSettings] = useState(false);
 
@@ -127,6 +128,7 @@ function Inner() {
       <RunForm />
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />
       <Celebration />
+      <Intro runs={data.runs} weeklyGoal={data.settings.weeklyKmGoal} />
     </>
   );
 }

@@ -327,3 +327,75 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 
 .acct-edit { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 0 4px 6px; }
 .acct-ok { font-size: 11px; color: var(--green); margin-left: 6px; }
 .acct-warn { color: #ffb547; font-size: 13px; }
+
+/* ---------- edge light: a soft light that follows the cursor along card edges ---------- */
+.glass, .btn, .chip, .wd, .goal, .badge, .cd { position: relative; }
+@media (hover: hover) and (pointer: fine) {
+  /* rim: a gradient ring masked down to the 1px border, lit where the pointer is */
+  .glass::after, .btn::after, .chip::after, .wd::after, .cday::after, .goal::after, .badge::after, .cd::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: radial-gradient(var(--edge-r, 220px) circle at var(--mx, -999px) var(--my, -999px),
+      rgba(255, 196, 160, 0.95), rgba(252, 76, 2, 0.55) 30%, rgba(167, 139, 250, 0.18) 55%, transparent 72%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity .35s ease;
+  }
+  /* surface: a faint spotlight inside large cards */
+  .glass::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(420px circle at var(--mx, -999px) var(--my, -999px), rgba(255, 255, 255, 0.055), transparent 45%);
+    opacity: 0; transition: opacity .35s ease;
+  }
+  .glass:hover::after, .glass:hover::before, .btn:hover::after, .chip:hover::after, .wd:hover::after,
+  .cday:hover::after, .goal:hover::after, .badge:hover::after, .cd:hover::after { opacity: 1; }
+  .btn, .chip, .wd, .cday, .goal, .badge, .cd { --edge-r: 90px; }
+  .glass { transition: border-color .3s ease, box-shadow .3s ease; }
+  .glass:hover { border-color: rgba(255, 255, 255, 0.13); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 24px 60px -30px rgba(252, 76, 2, 0.35); }
+  .auth-card:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+}
+
+/* primary buttons: a light sheen sweeps across on hover */
+.btn.primary { overflow: hidden; isolation: isolate; }
+.btn.primary > * { position: relative; z-index: 1; }
+.btn.primary::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: skewX(-18deg); transition: left .7s cubic-bezier(.16, 1, .3, 1);
+}
+.btn.primary:hover::before { left: 120%; }
+
+/* keyboard focus: a clear accent ring, never shown for mouse clicks */
+:where(button, a, .btn, .chip, .tab, .bn, input, select, textarea):focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+/* ---------- intro sequence ---------- */
+.intro { position: fixed; inset: 0; z-index: 300; background: radial-gradient(120% 80% at 50% 0%, #12141d 0%, var(--bg) 60%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 24px 16px; cursor: pointer; overflow: hidden; }
+.intro-glow { position: absolute; width: 720px; height: 720px; border-radius: 50%; left: 50%; top: 55%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(252, 76, 2, 0.22), transparent 62%); filter: blur(30px); pointer-events: none; }
+.intro-brand { position: absolute; top: calc(22px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing: 0.08em; }
+.intro-brand small { display: block; font-family: var(--font); font-weight: 600; font-size: 9.5px; letter-spacing: 0.22em; color: var(--text-3); }
+.intro-stage { position: relative; width: 100%; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: 26px; }
+.intro-track { position: relative; width: 100%; height: 112px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.intro-trail { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; transform-origin: left center;
+  background: linear-gradient(90deg, transparent, var(--accent) 40%, #ffb07a); box-shadow: 0 0 18px rgba(252, 76, 2, 0.7); }
+.intro-lane { position: absolute; left: 0; right: 150px; top: 0; bottom: 0; } /* runner's left edge travels this lane, so it stops at the flag */
+.intro-runner { position: absolute; bottom: -4px; }
+.intro-runner svg line[stroke-dasharray] { display: none; } /* the track draws its own ground */
+.intro-flag { position: absolute; right: 24px; bottom: 0; width: 2px; height: 64px; background: rgba(255, 255, 255, 0.5); transform-origin: bottom; }
+.intro-flag span { position: absolute; left: 2px; top: 0; width: 22px; height: 14px; background: var(--accent); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.intro-metrics { display: flex; align-items: center; justify-content: center; gap: clamp(18px, 6vw, 56px); width: 100%; }
+.intro-metric { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 92px; }
+.intro-metric b { font-family: var(--display); font-size: clamp(30px, 7vw, 46px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.intro-metric b small { font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--text-3); margin-left: 4px; }
+.intro-ring .ring-center b, .intro-ring .ring-center b span { font-size: 28px; color: var(--text); }
+.intro-verdict { min-height: 30px; }
+.intro-verdict p { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; display: flex; align-items: center; gap: 8px; }
+.intro-verdict p.ok { color: #7ee2a0; }
+.intro-check { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #fff; background: var(--green); box-shadow: 0 0 20px rgba(48, 209, 88, 0.6); }
+.intro-skip { position: absolute; right: 18px; bottom: calc(22px + env(safe-area-inset-bottom)); font-size: 13px; color: var(--text-3); padding: 8px 12px; border-radius: 10px; }
+.intro-skip:hover { color: var(--text); background: var(--glass); }
+@media (max-width: 520px) {
+  .intro-metric { min-width: 0; }
+  .intro-metrics { gap: 14px; }
+}
