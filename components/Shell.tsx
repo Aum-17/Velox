@@ -14,6 +14,9 @@ import { LiveRun } from "./LiveRun";
 import { RunForm } from "./RunForm";
 import { Celebration } from "./Celebration";
 import { SettingsSheet } from "./SettingsSheet";
+import { deviceName } from "./Profile";
+import { authClient } from "@/lib/auth-client";
+import { Fingerprint, X } from "lucide-react";
 
 const TABS = [
   { id: "home", label: "Dashboard", short: "Home", icon: Home },
@@ -36,7 +39,7 @@ function Clock() {
 }
 
 function Inner() {
-  const { ready, openRunForm } = useStore();
+  const { ready, openRunForm, syncState } = useStore();
   const [tab, setTab] = useState<TabId>("home");
   const [settings, setSettings] = useState(false);
 
@@ -71,7 +74,7 @@ function Inner() {
         <header className="topbar">
           <button className="brand" onClick={() => go("home")} aria-label="Velox home">
             <motion.span whileHover={{ rotate: -8, scale: 1.08 }} style={{ display: "flex" }}><Logo size={36} /></motion.span>
-            <span style={{ textAlign: "left" }}>VELOX<small>RUN LAB · PRATHAM</small></span>
+            <span style={{ textAlign: "left" }}>VELOX<small>RUN LAB</small></span>
           </button>
           <div className="spacer" />
           <nav className="tabs" aria-label="Sections">
@@ -89,6 +92,7 @@ function Inner() {
           <button className="btn primary sm" onClick={() => openRunForm()}><Plus size={16} /><span className="hide-sm">Log run</span></button>
         </header>
 
+        <PasskeyNudge onOpen={() => setSettings(true)} />
         <main>
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 14, filter: "blur(6px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -10, filter: "blur(6px)" }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}>
@@ -103,7 +107,7 @@ function Inner() {
         </main>
 
         <footer style={{ textAlign: "center", color: "var(--text-3)", fontSize: 12, marginTop: 40 }}>
-          Velox · built for Pratham&apos;s road to SSB · data stays on this device
+          <span className={`sync-dot ${syncState}`} />{syncState === "error" ? "Not synced, changes will retry" : syncState === "saving" ? "Saving…" : "Synced to your account"} · Velox Run Lab
         </footer>
       </div>
 
@@ -129,4 +133,34 @@ function Inner() {
 
 export function Shell() {
   return <StoreProvider><MotionConfig reducedMotion="user"><Inner /></MotionConfig></StoreProvider>;
+}
+
+/** One-time prompt after sign-in to turn on Face ID / fingerprint login. */
+function PasskeyNudge({ onOpen }: { onOpen: () => void }) {
+  const { data: passkeys, isPending } = authClient.useListPasskeys();
+  const { showToast } = useStore();
+  const [hidden, setHidden] = useState(true);
+  useEffect(() => {
+    let dismissed = false;
+    try { dismissed = localStorage.getItem("velox:passkey-nudge") === "1"; } catch {}
+    setHidden(dismissed || !window.PublicKeyCredential);
+  }, []);
+  if (hidden || isPending || (passkeys && passkeys.length)) return null;
+  const dismiss = () => { setHidden(true); try { localStorage.setItem("velox:passkey-nudge", "1"); } catch {} };
+  const add = async () => {
+    const r = await authClient.passkey.addPasskey({ name: deviceName() });
+    if (r?.error) { showToast(r.error.message || "Passkey was not added"); return; }
+    showToast("Face ID / fingerprint sign-in is on");
+    dismiss();
+  };
+  return (
+    <div className="glass card row" style={{ marginTop: 14, justifyContent: "space-between" }}>
+      <span style={{ fontSize: 14 }}><Fingerprint size={18} style={{ verticalAlign: "-4px", marginRight: 8, color: "var(--accent)" }} />Sign in faster next time with Face ID or your fingerprint.</span>
+      <span className="row">
+        <button className="btn primary sm" onClick={add}>Turn on</button>
+        <button className="btn ghost sm" onClick={onOpen}>Settings</button>
+        <button className="btn icon ghost" onClick={dismiss} aria-label="Dismiss"><X size={16} /></button>
+      </span>
+    </div>
+  );
 }

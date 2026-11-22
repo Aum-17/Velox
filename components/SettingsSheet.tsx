@@ -1,14 +1,15 @@
 "use client";
-import { Download, Upload, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "./ui";
 import { useStore } from "@/lib/store";
 import { download } from "@/lib/report";
 import { fmtDuration, fmtPace, parseDuration, todayISO } from "@/lib/utils";
 import type { AppData } from "@/lib/types";
+import { Profile } from "./Profile";
 
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { data, updateSettings, importData, resetData, showToast } = useStore();
+  const { data, updateSettings, importData, resetData, showToast, isOwner } = useStore();
   const s = data.settings;
   const [f, setF] = useState({ athlete: "", weekly: "", easy: "", raceName: "", raceDate: "", raceDist: "", raceTarget: "", ssbLabel: "", ssbDate: "" });
   const [confirmReset, setConfirmReset] = useState(false);
@@ -22,7 +23,7 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
 
   const save = () => {
     updateSettings({
-      athlete: f.athlete.trim() || "Pratham",
+      athlete: f.athlete.trim() || s.athlete || "Runner",
       weeklyKmGoal: parseFloat(f.weekly) || s.weeklyKmGoal,
       easyPace: parseDuration(f.easy) || s.easyPace,
       raceName: f.raceName.trim() || s.raceName,
@@ -53,8 +54,10 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
   );
 
   return (
-    <Modal open={open} onClose={onClose} title="Settings">
+    <Modal open={open} onClose={onClose} title="Profile & settings">
       <div className="form-grid">
+        <Profile />
+        <div className="full eyebrow" style={{ borderTop: "1px solid var(--stroke)", paddingTop: 16 }}>Training</div>
         {F("athlete", "Athlete name")}
         {F("weekly", "Weekly km goal", { inputMode: "decimal" })}
         {F("easy", "Easy pace threshold (min/km)")}
@@ -71,14 +74,14 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
         <div className="full" style={{ borderTop: "1px solid var(--stroke)", paddingTop: 16 }}>
           <div className="eyebrow" style={{ marginBottom: 6 }}>Your data</div>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Everything is saved in this browser — no account, no API key. To move to another device (phone ↔ laptop), export a backup here and import it there.
+            Your runs and goals are saved to your account and sync across every device you sign in on. Only you can see them. Export a backup any time.
           </p>
           <div className="row">
             <button className="btn" onClick={() => { download(`velox-backup-${todayISO()}.json`, JSON.stringify(data, null, 2), "application/json"); showToast("Backup downloaded"); }}><Download size={16} /> Export backup</button>
             <button className="btn" onClick={() => file.current?.click()}><Upload size={16} /> Import backup</button>
             <input ref={file} type="file" accept="application/json,.json" hidden onChange={onFile} />
             <button className="btn ghost danger" onClick={() => (confirmReset ? (resetData(), onClose()) : setConfirmReset(true))}>
-              <RotateCcw size={16} /> {confirmReset ? "Tap again to reset" : "Reset"}
+              <RotateCcw size={16} /> {confirmReset ? (isOwner ? "Tap again to restore original log" : "Tap again to erase all data") : "Reset"}
             </button>
           </div>
         </div>
@@ -86,3 +89,4 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
     </Modal>
   );
 }
+

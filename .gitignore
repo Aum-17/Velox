@@ -5,3 +5,8 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+.env
+.env*.local
+
+# Google OAuth client downloads
+client_secret_*.json

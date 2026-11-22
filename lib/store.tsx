@@ -1,11 +1,11 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { AppData, Celebration, Goal, Run, Settings } from "./types";
-import { seedData } from "./seed";
+import { blankData } from "./defaults";
 import { BADGES, unlocked } from "./badges";
 import { fmtPace, goalMet, km, paceOf, summarize, uid, weekStart, weekStat } from "./utils";
 
-const KEY = "velox:data:v1";
+const OLD_KEY = "velox:data:v1"; // pre-accounts localStorage copy; wiped so it can't leak into another account
 
 interface Store {
   data: AppData;
@@ -20,6 +20,8 @@ interface Store {
   updateSettings: (s: Partial<Settings>) => void;
   importData: (d: AppData) => void;
   resetData: () => void;
+  isOwner: boolean;
+  syncState: "idle" | "saving" | "error";
   celebrations: Celebration[];
   dismissCelebration: () => void;
   celebrate: (c: Omit<Celebration, "id">) => void;
@@ -34,9 +36,7 @@ interface Store {
 const Ctx = createContext<Store | null>(null);
 
 function initial(): AppData {
-  const d = seedData();
-  d.seenBadges = unlocked(d.runs, d.goals);
-  return d;
+  return blankData();
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -48,24 +48,57 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const ref = useRef(data);
   ref.current = data;
 
+  const [isOwner, setIsOwner] = useState(false);
+  const [syncState, setSyncState] = useState<"idle" | "saving" | "error">("idle");
+  const loaded = useRef<string | null>(null); // JSON of the last server copy, to skip no-op saves
+
+  const adopt = (raw: AppData) => {
+    const base = initial();
+    const d: AppData = { ...base, ...raw, settings: { ...base.settings, ...raw.settings } };
+    if (!raw.seenBadges) d.seenBadges = unlocked(d.runs, d.goals);
+    loaded.current = JSON.stringify(d);
+    ref.current = d;
+    setData(d);
+  };
+
+  // Load this account's data from the server
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as AppData;
-        if (parsed && Array.isArray(parsed.runs)) {
-          const merged = { ...initial(), ...parsed, settings: { ...initial().settings, ...parsed.settings } };
-          setData(merged);
-          ref.current = merged;
-        }
+    try { localStorage.removeItem(OLD_KEY); } catch {}
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/data", { cache: "no-store" });
+        if (res.status === 401) { window.location.href = "/login"; return; }
+        if (!res.ok) throw new Error(String(res.status));
+        const j = (await res.json()) as { data: AppData; owner: boolean };
+        if (cancelled) return;
+        adopt(j.data);
+        setIsOwner(j.owner);
+        setReady(true);
+      } catch {
+        if (!cancelled) { setSyncState("error"); setReady(true); setToast("Couldn't load your data. Check your connection and refresh."); }
       }
-    } catch {}
-    setReady(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
+  // Save changes back (debounced)
   useEffect(() => {
-    if (!ready) return;
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+    if (!ready || loaded.current === null) return;
+    const body = JSON.stringify(data);
+    if (body === loaded.current) return;
+    setSyncState("saving");
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await fetch("/api/data", { method: "PUT", headers: { "Content-Type": "application/json" }, body, keepalive: body.length < 60000 });
+        if (!res.ok) throw new Error(String(res.status));
+        loaded.current = body;
+        setSyncState("idle");
+      } catch {
+        setSyncState("error");
+      }
+    }, 700);
+    return () => window.clearTimeout(t);
   }, [data, ready]);
 
   const commit = (next: AppData) => { ref.current = next; setData(next); };
@@ -168,10 +201,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     commit({ ...base, ...d, settings: { ...base.settings, ...d.settings } });
     showToast("Backup restored");
   };
-  const resetData = () => { commit(initial()); showToast("Reset to original log"); };
+  const resetData = async () => {
+    try {
+      const res = await fetch("/api/data", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      const j = (await res.json()) as { data: AppData; owner: boolean };
+      adopt(j.data);
+      showToast(j.owner ? "Reset to original log" : "All data cleared");
+    } catch { showToast("Reset failed. Try again."); }
+  };
 
   const value: Store = {
-    data, ready, addRun, updateRun, deleteRun, addGoal, updateGoal, toggleGoal, deleteGoal, updateSettings, importData, resetData,
+    data, ready, addRun, updateRun, deleteRun, addGoal, updateGoal, toggleGoal, deleteGoal, updateSettings, importData, resetData, isOwner, syncState,
     celebrations, dismissCelebration: () => setCelebrations((q) => q.slice(1)), celebrate,
     runDraft, openRunForm: (d) => setRunDraft(d ?? {}), closeRunForm: () => setRunDraft(null),
     toast, showToast,

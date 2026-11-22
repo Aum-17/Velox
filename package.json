@@ -4,21 +4,28 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/migrate.mts && next build",
+    "db:migrate": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/migrate.mts",
     "start": "next start"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.7.27",
+    "better-auth": "^1.7.27",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^14.14.0",
     "lucide-react": "^1.77.0",
     "next": "^15.5.29",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "recharts": "^3.11.0"
+    "recharts": "^3.11.0",
+    "resend": "^6.39.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "^5.9.3"

@@ -7,7 +7,7 @@ const display = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "700", "8
 
 export const metadata: Metadata = {
   title: "Velox · Run Lab",
-  description: "Pratham's personal running dashboard — log runs, track weekly pace, plan goals and download reports.",
+  description: "Your personal running dashboard — log runs, track weekly pace, plan goals and download reports.",
   appleWebApp: { capable: true, title: "Velox", statusBarStyle: "black-translucent" },
   manifest: "/manifest.webmanifest",
 };

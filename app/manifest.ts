@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Velox · Run Lab",
     short_name: "Velox",
-    description: "Pratham's running dashboard",
+    description: "Your personal running dashboard",
     start_url: "/",
     display: "standalone",
     background_color: "#07080c",

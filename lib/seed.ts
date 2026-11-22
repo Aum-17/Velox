@@ -1,6 +1,8 @@
+import "server-only";
 import type { AppData, Goal, Run, RunType } from "./types";
 
-// Pratham's run log, carried over from the coaching chat.
+// The owner's original run log (carried over from the coaching chat).
+// SERVER-ONLY: served exclusively to OWNER_EMAIL by app/api/data — never bundled into the browser.
 // Runs 1–25 had no exact dates in the chat, so their dates are reconstructed estimates.
 type Row = [string, string, number, string, RunType, string?, string[]?];
 const rows: Row[] = [
@@ -101,7 +103,7 @@ export function seedData(): AppData {
     runs: seedRuns,
     goals: seedGoals,
     settings: {
-      athlete: "Pratham",
+      athlete: "Runner", // replaced with the account name on first load
       weeklyKmGoal: 22,
       easyPace: 450, // 7:30/km
       raceName: "10K Race",

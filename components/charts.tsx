@@ -55,6 +55,7 @@ export function DailyKmChart({ data, height = 220 }: { data: { label: string; di
 export function PaceChart({ data, height = 240, showAvg = true, target }: { data: { label: string; pace: number; avg?: number; distance?: number }[]; height?: number; showAvg?: boolean; target?: number }) {
   const anim = !useReducedMotion();
   const vals = data.flatMap((d) => [d.pace, d.avg ?? d.pace]).filter((v) => v > 0);
+  if (!vals.length) return <div className="empty" style={{ height, display: "grid", placeItems: "center" }}>Log a run to see your pace trend.</div>;
   const lo = Math.floor((Math.min(...vals, target ?? Infinity) - 15) / 15) * 15;
   const hi = Math.ceil((Math.max(...vals) + 15) / 15) * 15;
   return (
@@ -81,6 +82,7 @@ export function PaceChart({ data, height = 240, showAvg = true, target }: { data
 export function WeeklyPaceChart({ data, height = 220 }: { data: WeekBar[]; height?: number }) {
   const anim = !useReducedMotion();
   const vals = data.map((d) => d.pace).filter((v) => v > 0);
+  if (!vals.length) return <div className="empty" style={{ height, display: "grid", placeItems: "center" }}>Weekly pace shows up after your first run.</div>;
   const lo = Math.floor((Math.min(...vals) - 10) / 15) * 15;
   const hi = Math.ceil((Math.max(...vals) + 10) / 15) * 15;
   return (

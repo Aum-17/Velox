@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 
 const LINES: Record<string, string[]> = {
   goal: ["Discipline wins. One more box ticked.", "That's how officers are made.", "Plan → Execute → Done."],
-  badge: ["Something new for the trophy shelf.", "You earned this one, Pratham."],
+  badge: ["Something new for the trophy shelf.", "You earned this one."],
   week: ["Volume banked. Recovery next.", "The engine is getting bigger."],
   pb: ["Faster than ever before.", "New personal best — log it, own it."],
   run: ["Another brick in the base.", "Consistency is your superpower."],
