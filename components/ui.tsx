@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion, animate, useMotionValue, useTransform, useReducedMotion } from "framer-motion";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X, Pencil, Trash2 } from "lucide-react";
 import type { Run } from "@/lib/types";
 import { fmtDate, fmtDuration, fmtPace, fmtTime12, km, paceOf, runTitle, typeMeta } from "@/lib/utils";
@@ -92,7 +92,13 @@ export function Ring({ pct, size = 132, stroke = 12, children }: { pct: number; 
 }
 
 /** Animated SVG runner — legs and arms swing with SMIL so it works everywhere */
-export function Runner({ size = 150, speed = 0.7 }: { size?: number; speed?: number }) {
+export function Runner({ size = 150, speed = 0.7, stopAfter }: { size?: number; speed?: number; stopAfter?: number }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    if (!stopAfter) return;
+    const t = setTimeout(() => svgRef.current?.pauseAnimations(), stopAfter * 1000);
+    return () => clearTimeout(t);
+  }, [stopAfter]);
   const d = `${speed}s`;
   const half = `-${speed / 2}s`;
   const limb = { stroke: "#fff", strokeWidth: 6, strokeLinecap: "round" as const };
@@ -123,7 +129,7 @@ export function Runner({ size = 150, speed = 0.7 }: { size?: number; speed?: num
     </g>
   );
   return (
-    <svg width={size} height={size * 0.86} viewBox="0 0 140 120" aria-hidden>
+    <svg ref={svgRef} width={size} height={size * 0.86} viewBox="0 0 140 120" aria-hidden>
       {/* speed lines */}
       {[30, 52, 74].map((y, i) => (
         <line key={y} x1="10" y1={y} x2="34" y2={y} stroke="#FC4C02" strokeWidth="3" strokeLinecap="round" opacity=".7">
