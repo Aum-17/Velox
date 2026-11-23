@@ -57,10 +57,18 @@ export function Profile() {
     return run(() => authClient.updateUser({ username: v.username.trim() }), "Username updated");
   };
   const saveEmail = () => run(async () => {
-    const r = await authClient.changeEmail({ newEmail: v.email.trim(), callbackURL: "/" });
-    if (!r.error) showToast(`Check ${v.email.trim()} for a link to confirm it`);
-    return r;
-  }, "Confirmation email sent");
+    try {
+      const res = await fetch("/api/account/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: v.email.trim() }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      return res.ok ? {} : { error: { message: j.error || "Couldn't save your email. Try again." } };
+    } catch {
+      return { error: { message: "Network error. Check your connection and try again." } };
+    }
+  }, realEmail ? "Email updated" : "Email added");
   const savePassword = () => {
     if (v.next.length < 8) return setErr("Use at least 8 characters.");
     return run(() => authClient.changePassword({ currentPassword: v.current, newPassword: v.next, revokeOtherSessions: true }), "Password changed");
@@ -111,7 +119,7 @@ export function Profile() {
       {row({ icon: <Mail size={16} />, label: "Email",
         value: realEmail ? <>{user?.email} {user?.emailVerified && <span className="acct-ok">verified</span>}</> : <span className="acct-warn">No email yet. Add one so you can reset your password.</span>,
         action: realEmail ? "Change" : "Add", p: "email" })}
-      {panel === "email" && edit({ onSave: saveEmail, hint: "We'll email a confirmation link to the new address. It's saved once you open the link.", children: (
+      {panel === "email" && edit({ onSave: saveEmail, hint: "Saved right away. You can then use it to reset your password or sign in with Google on the same address.", children: (
         <input className="input" type="email" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} placeholder="you@gmail.com" required autoFocus />
       ) })}
 

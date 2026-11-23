@@ -34,6 +34,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
   const ws = weekStart(today);
   const strip = weekDates(ws);
   const distDelta = m.prev?.distance ? ((m.cur.distance - m.prev.distance) / m.prev.distance) * 100 : 0;
+  const timeDelta = m.cur.duration - (m.prev?.duration ?? 0);
   const paceDelta = m.prev?.pace && m.cur.pace ? m.prev.pace - m.cur.pace : 0;
   const raceIn = daysBetween(today, settings.raceDate);
   const ssbIn = daysBetween(today, settings.ssbDate);
@@ -76,7 +77,8 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
       <div className="grid g4 section">
         <Stat label="Total distance" icon={<Route size={16} />} value={<CountUp value={m.total.distance} format={(n) => n.toFixed(1)} />} unit="km" foot={`${m.weeks.length} weeks logged`} delay={0.05} />
         <Stat label="Total runs" icon={<Activity size={16} />} value={<CountUp value={m.total.count} />} foot={`${(m.total.count / Math.max(1, m.weeks.length)).toFixed(1)} runs / week`} delay={0.1} />
-        <Stat label="Moving time" icon={<Clock size={16} />} value={fmtHours(m.total.duration)} foot="all time" delay={0.15} />
+        <Stat label="Moving time this week" icon={<Clock size={16} />} value={fmtHours(m.cur.duration)}
+          foot={<>{m.prev ? <span className={timeDelta >= 0 ? "up" : "down"}>{timeDelta >= 0 ? "▲" : "▼"} {fmtHours(Math.abs(timeDelta))} vs last wk</span> : "first week"} · {fmtHours(m.total.duration)} all time</>} delay={0.15} />
         <Stat label="Overall avg pace" icon={<Gauge size={16} />} value={fmtPace(m.total.pace)} unit="/km" foot={`best ${fmtPace(m.total.fastest)}/km`} delay={0.2} />
         <Stat label="This week" icon={<CalendarDays size={16} />} value={<CountUp value={m.cur.distance} format={(n) => n.toFixed(1)} />} unit="km"
           foot={m.prev ? <span className={distDelta >= 0 ? "up" : "down"}>{distDelta >= 0 ? "▲" : "▼"} {Math.abs(distDelta).toFixed(0)}% vs last week</span> : "first week"} delay={0.25} />
