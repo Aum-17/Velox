@@ -66,7 +66,7 @@ export function Dashboard({ go }: { go: (tab: string) => void }) {
           </div>
         </div>
         <div className="hero-scene row" style={{ justifyContent: "center", gap: 10 }}>
-          <Runner size={170} stopAfter={5} />
+          <Runner size={170} finish />
           <Ring pct={pct} size={140}>
             <div><b>{km1(m.cur.distance)}</b><span>of {settings.weeklyKmGoal} km</span></div>
           </Ring>
