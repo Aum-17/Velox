@@ -3,6 +3,8 @@ import { Check, Fingerprint, KeyRound, LogOut, Mail, Pencil, Trash2, UserRound, 
 import { useEffect, useState, type ReactNode } from "react";
 import { authClient, hasRealEmail, signOut, useSession } from "@/lib/auth-client";
 import { useStore } from "@/lib/store";
+import { looksLikeEmail, passwordError } from "@/lib/password";
+import { PasswordRules } from "./PasswordRules";
 
 type Panel = null | "name" | "username" | "email" | "password";
 
@@ -56,21 +58,20 @@ export function Profile() {
     if (!/^[a-zA-Z0-9_.]{3,30}$/.test(v.username)) return setErr("3–30 letters, numbers, _ or .");
     return run(() => authClient.updateUser({ username: v.username.trim() }), "Username updated");
   };
-  const saveEmail = () => run(async () => {
-    try {
-      const res = await fetch("/api/account/email", {
+  const saveEmail = () => {
+    if (!looksLikeEmail(v.email)) return setErr("Enter a valid email address, like name@gmail.com.");
+    return run(async () => {
+      const r = await authClient.$fetch<{ status: boolean }>("/account/set-email", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: v.email.trim() }),
+        body: { email: v.email.trim(), ...(hasPassword ? { password: v.current } : {}) },
       });
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      return res.ok ? {} : { error: { message: j.error || "Couldn't save your email. Try again." } };
-    } catch {
-      return { error: { message: "Network error. Check your connection and try again." } };
-    }
-  }, realEmail ? "Email updated" : "Email added");
+      if (r.error?.status === 429) return { error: { message: "Too many attempts. Wait a few minutes and try again." } };
+      return r;
+    }, realEmail ? "Email updated" : "Email added");
+  };
   const savePassword = () => {
-    if (v.next.length < 8) return setErr("Use at least 8 characters.");
+    const pwErr = passwordError(v.next);
+    if (pwErr) return setErr(pwErr);
     return run(() => authClient.changePassword({ currentPassword: v.current, newPassword: v.next, revokeOtherSessions: true }), "Password changed");
   };
 
@@ -120,7 +121,10 @@ export function Profile() {
         value: realEmail ? <>{user?.email} {user?.emailVerified && <span className="acct-ok">verified</span>}</> : <span className="acct-warn">No email yet. Add one so you can reset your password.</span>,
         action: realEmail ? "Change" : "Add", p: "email" })}
       {panel === "email" && edit({ onSave: saveEmail, hint: "Saved right away. You can then use it to reset your password or sign in with Google on the same address.", children: (
-        <input className="input" type="email" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} placeholder="you@gmail.com" required autoFocus />
+        <>
+          <input className="input" type="email" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} placeholder="you@gmail.com" maxLength={254} required autoFocus />
+          {hasPassword && <input className="input" type="password" value={v.current} onChange={(e) => setV({ ...v, current: e.target.value })} placeholder="Current password (to confirm it's you)" autoComplete="current-password" required />}
+        </>
       ) })}
 
       {hasPassword ? (
@@ -129,7 +133,8 @@ export function Profile() {
           {panel === "password" && edit({ onSave: savePassword, hint: "Your other devices will be signed out.", children: (
             <>
               <input className="input" type="password" value={v.current} onChange={(e) => setV({ ...v, current: e.target.value })} placeholder="Current password" autoComplete="current-password" required autoFocus />
-              <input className="input" type="password" value={v.next} onChange={(e) => setV({ ...v, next: e.target.value })} placeholder="New password (8+ characters)" autoComplete="new-password" required />
+              <input className="input" type="password" value={v.next} onChange={(e) => setV({ ...v, next: e.target.value })} placeholder="New password" autoComplete="new-password" maxLength={64} required />
+              <PasswordRules value={v.next} />
             </>
           ) })}
         </>

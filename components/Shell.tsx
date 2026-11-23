@@ -15,6 +15,7 @@ import { RunForm } from "./RunForm";
 import { Celebration } from "./Celebration";
 import { SettingsSheet } from "./SettingsSheet";
 import { Intro } from "./Intro";
+import { WeakPasswordPrompt } from "./WeakPasswordPrompt";
 import { deviceName } from "./Profile";
 import { authClient } from "@/lib/auth-client";
 import { Fingerprint, X } from "lucide-react";
@@ -128,6 +129,7 @@ function Inner() {
       <RunForm />
       <SettingsSheet open={settings} onClose={() => setSettings(false)} />
       <Celebration />
+      <WeakPasswordPrompt />
       <Intro runs={data.runs} weeklyGoal={data.settings.weeklyKmGoal} />
     </>
   );

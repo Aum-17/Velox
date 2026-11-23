@@ -12,9 +12,9 @@ export async function ensureOwner(auth: Auth, pool: Pool, opts: { username: stri
     console.log(`[owner] account "${username}" already exists; leaving it untouched.`);
     return;
   }
-  if (opts.password.length < 8) throw new Error("Owner password must be at least 8 characters.");
-
-  const { NO_EMAIL_DOMAIN } = await import("../lib/auth.ts");
+  const { NO_EMAIL_DOMAIN, passwordProblem } = await import("../lib/auth.ts");
+  const problem = passwordProblem(opts.password);
+  if (problem) throw new Error(`OWNER_PASSWORD: ${problem}`);
   const { seedData } = await import("../lib/seed.ts");
   const ctx = await auth.$context;
 

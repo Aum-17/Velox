@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "./Logo";
+import { PasswordRules } from "./PasswordRules";
+import { looksLikeEmail, passwordError } from "@/lib/password";
 
 function errMsg(e: { message?: string; status?: number } | null | undefined, fallback = "Something went wrong. Try again.") {
   return e?.message || fallback;
@@ -125,8 +127,10 @@ export function SignUpForm({ google, verify = true }: { google: boolean; verify?
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (f.password.length < 8) return setError("Use at least 8 characters for your password.");
     if (!/^[a-zA-Z0-9_.]{3,30}$/.test(f.username)) return setError("Username: 3–30 letters, numbers, _ or .");
+    if (!looksLikeEmail(f.email)) return setError("Enter a valid email address, like name@gmail.com.");
+    const pwErr = passwordError(f.password);
+    if (pwErr) return setError(pwErr);
     setBusy(true); setError(null);
     const { error } = await authClient.signUp.email({ name: f.name.trim(), username: f.username.trim(), email: f.email.trim(), password: f.password, callbackURL: "/" });
     setBusy(false);
@@ -157,7 +161,8 @@ export function SignUpForm({ google, verify = true }: { google: boolean; verify?
         <div className="field"><label htmlFor="email">Email</label>
           <input id="email" className="input" type="email" required autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="you@gmail.com" /></div>
         <div className="field"><label htmlFor="password">Password</label>
-          <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} placeholder="At least 8 characters" /></div>
+          <input id="password" className="input" type="password" required minLength={8} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} placeholder="e.g. Runner#2026" maxLength={64} />
+          <PasswordRules value={f.password} /></div>
         <Err msg={error} />
         <button className="btn primary auth-wide" disabled={busy}>{busy && <Loader2 size={18} className="spin" />} Create account</button>
       </form>
@@ -217,7 +222,8 @@ export function ResetForm({ token, invalid }: { token: string | null; invalid: b
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (pw.length < 8) return setError("Use at least 8 characters.");
+    const pwErr = passwordError(pw);
+    if (pwErr) return setError(pwErr);
     if (pw !== pw2) return setError("The passwords don't match.");
     setBusy(true); setError(null);
     const { error } = await authClient.resetPassword({ newPassword: pw, token });
@@ -238,7 +244,8 @@ export function ResetForm({ token, invalid }: { token: string | null; invalid: b
     <AuthFrame title="Set a new password">
       <form onSubmit={onSubmit} className="auth-form">
         <div className="field"><label htmlFor="pw">New password</label>
-          <input id="pw" className="input" type="password" required minLength={8} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
+          <input id="pw" className="input" type="password" required minLength={8} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} maxLength={64} />
+          <PasswordRules value={pw} /></div>
         <div className="field"><label htmlFor="pw2">Confirm password</label>
           <input id="pw2" className="input" type="password" required autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></div>
         <Err msg={error} />
